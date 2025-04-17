@@ -1,0 +1,19 @@
+{
+  "name": "simple-tracker",
+  "version": "0.1.0",
+  "description": "A simple tracking pixel system based on Openpixel",
+  "main": "dist/tracker.min.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "terser": "^5.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+} 
