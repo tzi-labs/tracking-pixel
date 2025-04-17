@@ -19,6 +19,10 @@
     <h1>Simple Tracker Demo Page</h1>
     <p>This page includes the tracking snippet. Check your browser's network tab (for requests to <code>%%PIXEL_ENDPOINT%%</code>) and the server logs to see tracking events.</p>
 
+    <h2>Configuration:</h2>
+    <button onclick="strk('config', 'trackAllClicks', true); alert('Generic click tracking enabled!');">Enable Generic Clicks</button>
+    <button onclick="strk('config', 'trackAllClicks', false); alert('Generic click tracking disabled!');">Disable Generic Clicks</button>
+
     <h2>Trigger Custom Events (using <code>%%FUNC_NAME%%</code>):</h2>
     <button onclick="%%FUNC_NAME%%('event', 'button_js_click')">Trigger JS Event</button>
     <button onclick="%%FUNC_NAME%%('event', 'event_with_data', { category: 'Test', value: 10 })">Trigger JS Event w/ Data</button>
@@ -47,6 +51,34 @@
     <div class="snippet-container">
         <h2>Snippet Code Injected Above:</h2>
         <p>(The actual tracking snippet configured with your settings has been injected into the <code>&lt;head&gt;</code> of this page during the build process).</p>
+    </div>
+
+    <!-- Test Generic Click -->
+    <div style="border: 1px solid #eee; padding: 15px; margin-top: 15px;">
+        <h2>Generic Click Test Area (if trackAllClicks is enabled):</h2>
+        <p>Clicks on the button or text below should trigger a 'generic_click' event if tracking is on.</p>
+        <button id="generic-button">Generic Button (No data-* attrs)</button>
+        <div class="card" style="border: 1px solid #ccc; padding: 15px; margin-top: 15px;">
+            <h3 class="card-title" id="card1-title">Card Title 1</h3>
+            <p class="card-description">This is the description for the first card. It contains <span>some nested text</span> elements.</p>
+            <button>Button Inside Card 1</button>
+        </div>
+        <div class="card" style="border: 1px solid #ccc; padding: 15px; margin-top: 15px;">
+             <p class="card-description">This is the description for the second card.</p>
+             <button>Button Inside Card 2 (No Heading)</button>
+        </div>
+    </div>
+
+    <!-- Test Outbound Links -->
+    <div style="border: 1px solid #eee; padding: 15px; margin-top: 15px;">
+        <h2>Outbound Link Test Area:</h2>
+        <p>Clicks on these links should trigger an 'outbound_link_click' event.</p>
+        <ul>
+            <li><a href="https://www.google.com" target="_blank">Google</a></li>
+            <li><a href="https://example.com">Example.com</a></li>
+            <li><a href="//github.com">GitHub (Protocol-relative)</a></li>
+            <li><a href="#internal-link">Internal Link (Should NOT trigger)</a></li>
+        </ul>
     </div>
 
 </body>

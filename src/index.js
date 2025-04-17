@@ -117,14 +117,17 @@ function setupEventListeners() {
                 elementForGenericClick = target;
             }
 
-             // Check for anchor tag for pageclose logic (independent of click tracking)
+             // Check for anchor tag - **Track outbound clicks**
             if (target.tagName === 'A' && target.href) {
                  if (Helper.isExternalHost(target)) {
-                     console.log(`[index.js] External link clicked: ${target.href}`);
-                     // Store the external link info for potential use in 'pageclose'
-                    Config.lastExternalHost = { link: target.href, time: Helper.now() };
+                     console.log(`[index.js] Outbound link clicked: ${target.href}`);
+                     // Trigger an event specifically for outbound links
+                     window[PIXEL_FUNC_NAME]('event', 'outbound_link_click', { href: target.href });
+                     // We no longer need Config.lastExternalHost for pageclose, as we track immediately.
+                     // Config.lastExternalHost = { link: target.href, time: Helper.now() };
                  }
-                 // We don't break here for links, allow traversal to continue for potential data-attributes on parent links
+                 // We don't break here for links, allow traversal to continue
+                 // for potential data-attributes on parent links/elements.
              }
 
             // If a specific data attribute was found, we can stop the traversal for click tracking purposes

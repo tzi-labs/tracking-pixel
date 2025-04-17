@@ -22,16 +22,21 @@ export const Config = {
 // Called once the main script loads (from index.js)
 export function initQueue() {
     console.log('[core.js] initQueue() called.');
-    // Set/update the user ID cookie (lasting 2 years)
-    const uidCookieName = 'uid';
-    const uidExists = Cookie.exists(uidCookieName);
-    const currentUid = uidExists ? Cookie.get(uidCookieName) : Helper.guid();
-    Cookie.set(uidCookieName, currentUid, 2 * 365 * 24 * 60); // Set/update cookie with 2-year expiry
+    try {
+        // Set/update the user ID cookie (lasting 2 years)
+        const uidCookieName = 'uid';
+        const uidExists = Cookie.exists(uidCookieName);
+        const currentUid = uidExists ? Cookie.get(uidCookieName) : Helper.guid();
+        Cookie.set(uidCookieName, currentUid, 2 * 365 * 24 * 60); // Set/update cookie with 2-year expiry
 
-    // Persist UTM parameters from URL into a session cookie
-    Cookie.setUtms();
+        // Persist UTM parameters from URL into a session cookie
+        Cookie.setUtms();
 
-    console.log("Initial setup (UID cookie, UTMs) complete.");
+        console.log("[core.js] Initial setup (UID cookie, UTMs) complete.");
+    } catch (error) {
+        console.error("[core.js] Error during initQueue execution:", error);
+        // Allow script to continue, but core features like UID/UTM might be affected.
+    }
 }
 
 
