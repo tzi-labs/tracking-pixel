@@ -1,8 +1,6 @@
 // src/snippet-template.js
 // NOTE: This file is NOT processed by Vite directly for dependencies.
-// It's read as text, placeholders are replaced, and then minified by the custom plugin.
-// Therefore, DO NOT use import/export or rely on Vite's define plugin here.
-// Use placeholders like OPIX_FUNC_PLACEHOLDER, JS_ENDPOINT_PLACEHOLDER, ID_PLACEHOLDER.
+// Placeholders are replaced by the generateSnippetPlugin in vite.config.js.
 
 (function(window, document, script, endpoint, funcName, cacheMs, funcObj, scriptTag, firstScript) {
   // Avoid re-initialization if snippet is included multiple times
@@ -39,10 +37,8 @@
 
   // --- Initial commands ---
   // These are queued immediately using the function created above.
-  // Replace 'ID_PLACEHOLDER' with the actual tracker ID during the build.
-  // Replace 'OPIX_FUNC_PLACEHOLDER' with the actual function name.
 
-  // Initialize with the tracker ID
+  // Initialize with the tracker ID (replaced by plugin)
   window[funcName]('init', 'ID_PLACEHOLDER');
   // Send the initial 'pageload' event
   window[funcName]('event', 'pageload');

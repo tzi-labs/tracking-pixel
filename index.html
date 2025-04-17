@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Tracker Demo</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; word-wrap: break-word; }
+        .snippet-container { margin-top: 20px; }
+        code { background-color: #eee; padding: 2px 4px; border-radius: 3px; }
+    </style>
+
+    <!-- SNIPPET_INJECTION_POINT -->
+
+</head>
+<body>
+    <h1>Simple Tracker Demo Page</h1>
+    <p>This page includes the tracking snippet. Check your browser's network tab (for requests to <code>%%PIXEL_ENDPOINT%%</code>) and the server logs to see tracking events.</p>
+
+    <h2>Trigger Custom Events (using <code>%%FUNC_NAME%%</code>):</h2>
+    <button onclick="%%FUNC_NAME%%('event', 'button_js_click')">Trigger JS Event</button>
+    <button onclick="%%FUNC_NAME%%('event', 'event_with_data', { category: 'Test', value: 10 })">Trigger JS Event w/ Data</button>
+
+    <h2>Trigger via Data Attributes:</h2>
+    <button data-%%FUNC_NAME%%-event="button_attr_click">Trigger Data Attr Event</button>
+    <button data-%%FUNC_NAME%%-event="data_attr_with_data" data-%%FUNC_NAME%%-data='{"source":"button_attr", "isValid": true}'>Trigger Data Attr Event w/ Data</button>
+
+    <div class="snippet-container">
+        <h2>Snippet Code Injected Above:</h2>
+        <p>(The actual tracking snippet configured with your settings has been injected into the <code>&lt;head&gt;</code> of this page during the build process).</p>
+    </div>
+
+</body>
+</html> 

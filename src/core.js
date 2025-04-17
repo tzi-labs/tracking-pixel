@@ -20,6 +20,7 @@ export const Config = {
 // --- Initial Setup ---
 // Called once the main script loads (from index.js)
 export function initQueue() {
+    console.log('[core.js] initQueue() called.');
     // Set/update the user ID cookie (lasting 2 years)
     const uidCookieName = 'uid';
     const uidExists = Cookie.exists(uidCookieName);
@@ -35,34 +36,36 @@ export function initQueue() {
 
 // --- Command Processor ---
 // Handles calls like strk('init', 'ID-123'), strk('event', 'click'), etc.
-export function processCommand(args) {
-    // Convert arguments object to array
-    const [method, value, optional] = Array.from(args);
+export function processCommand(method, value, optional) {
+    console.log('[core.js] processCommand() received: method=', method, ' value=', value, ' optional=', optional);
+    // Convert arguments object to array - REMOVED
+    // const [method, value, optional] = Array.from(args); 
 
     if (method === 'init') {
         if (value) {
             Config.id = value;
-            console.log(`Tracker initialized with ID: ${Config.id}`);
+            console.log(`[core.js] Tracker initialized with ID: ${Config.id}`);
         } else {
-            console.error("Initialization command 'init' requires a tracker ID.");
+            console.error("[core.js] Initialization command 'init' requires a tracker ID.");
         }
     } else if (method === 'param') {
         if (value && typeof optional !== 'undefined') {
             // Store custom parameters. The value will be evaluated when the pixel is sent.
             Config.params[value] = () => Helper.optionalData(optional); // Store function to resolve data later
-            console.log(`Custom parameter set: ${value}`);
+            console.log(`[core.js] Custom parameter set: ${value}`);
         } else {
-            console.error("Command 'param' requires a key and a value.");
+            console.error("[core.js] Command 'param' requires a key and a value.");
         }
     } else if (method === 'event') {
         handleEvent(value, optional);
     } else {
-        console.warn(`Unknown command: ${method}`);
+        console.warn(`[core.js] Unknown command received: ${method}`);
     }
 }
 
 // --- Event Handling ---
 function handleEvent(eventName, eventData) {
+    console.log(`[core.js] handleEvent() called: eventName=${eventName}, eventData=`, eventData);
     if (!eventName) {
         console.error("Event command requires an event name.");
         return;
@@ -79,7 +82,7 @@ function handleEvent(eventName, eventData) {
     if (eventName === 'pageload') {
         if (!Config.pageLoadOnce) {
             Config.pageLoadOnce = true;
-            sendPixel(eventName, timestamp, eventData);
+            sendPayload(eventName, timestamp, eventData);
         } else {
             console.log("'pageload' event already sent for this page view.");
         }
@@ -91,32 +94,51 @@ function handleEvent(eventName, eventData) {
         if (Config.lastExternalHost && (Helper.now() - Config.lastExternalHost.time) < 5000) { // 5 seconds threshold
             const externalLinkData = { external_link: Config.lastExternalHost.link };
             // Merge link data with existing data if possible, prioritize link data.
-            closeData = typeof closeData === 'object' ? { ...closeData, ...externalLinkData } : externalLinkData;
+            // Ensure closeData is an object if we need to merge
+            if (typeof closeData !== 'object' || closeData === null) {
+                closeData = {};
+            }
+            // Ensure externalLinkData doesn't overwrite existing keys unless intended
+            closeData = { ...closeData, ...externalLinkData }; 
         }
-        sendPixel(eventName, timestamp, closeData); // Send potentially augmented data
+        sendPayload(eventName, timestamp, closeData); // Send potentially augmented data
     } else {
         // Handle custom events directly
-        sendPixel(eventName, timestamp, eventData);
+        sendPayload(eventName, timestamp, eventData);
     }
 }
 
 
-// --- Pixel Sending ---
-function sendPixel(event, timestamp, optionalData) {
+// --- Payload Sending Logic ---
+function sendPayload(event, timestamp, optionalData) {
+    console.log(`[core.js] sendPayload() called: event=${event}, timestamp=${timestamp}, optionalData=`, optionalData);
     if (!Config.id) {
-        console.warn("Tracker not initialized with an ID. Pixel not sent.");
+        console.warn("[core.js] Tracker not initialized with an ID. Payload not sent.");
         return;
     }
 
-    const params = [];
-    const optional = Helper.optionalData(optionalData); // Process optional data early
+    const dataObject = {};
+    // Note: optionalData should be processed *before* assigning to ed
+    // It might be a string needing parsing, or already an object.
+    let processedEventData;
+    try {
+        // Attempt to parse if it looks like JSON, otherwise keep as is
+        if (typeof optionalData === 'string' && (optionalData.startsWith('{') || optionalData.startsWith('['))) {
+            processedEventData = JSON.parse(optionalData);
+        } else {
+            processedEventData = optionalData; // Keep as is (string, number, boolean, null, object)
+        }
+    } catch (e) {
+        console.warn("Could not parse event data as JSON, sending as string:", optionalData);
+        processedEventData = optionalData; // Send original string on parse error
+    }
 
     // Define base attributes function map
     const baseAttributes = {
         id: () => Config.id,                   // Website/Tracker ID
         uid: () => Cookie.get('uid'),           // User ID from cookie
         ev: () => event,                       // Event name
-        ed: () => optional,                    // Event data (processed)
+        ed: () => processedEventData,          // Event data (potentially parsed object or original value)
         v: () => Config.version,               // Tracker version
         dl: () => window.location.href,        // Document location (URL)
         rl: () => document.referrer,           // Referrer URL
@@ -135,7 +157,6 @@ function sendPixel(event, timestamp, optionalData) {
         utm_term:     key => Cookie.getUtm(key), // Get utm_term
         utm_content:  key => Cookie.getUtm(key), // Get utm_content
         utm_campaign: key => Cookie.getUtm(key), // Get utm_campaign
-        // Add newer UTM params if needed, ensure they are in Cookie.setUtms
         utm_source_platform:  key => Cookie.getUtm(key),
         utm_creative_format:  key => Cookie.getUtm(key),
         utm_marketing_tactic: key => Cookie.getUtm(key),
@@ -144,63 +165,69 @@ function sendPixel(event, timestamp, optionalData) {
     // Combine base attributes and custom parameters
     const allAttributes = { ...baseAttributes, ...Config.params };
 
-    // Build query string parameters
+    // Build payload object
     for (const key in allAttributes) {
         if (Object.hasOwnProperty.call(allAttributes, key)) {
             try {
                 // Execute the function associated with the key to get the current value
                 const value = allAttributes[key](key); // Pass key for context if needed (e.g., UTMs)
-                // Encode and add the parameter if the value is present
-                if (Helper.isPresent(value)) {
-                    params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
-                } else {
-                    // Send empty value if key exists but value is null/undefined/empty
-                    params.push(`${encodeURIComponent(key)}=`);
-                }
+                // Assign value to dataObject, handling potential absence
+                dataObject[key] = Helper.isPresent(value) ? value : null; // Use null for absent values in JSON
             } catch (e) {
                 console.error(`Error getting value for parameter "${key}":`, e);
-                params.push(`${encodeURIComponent(key)}=`); // Add empty on error
+                dataObject[key] = null; // Assign null on error
             }
         }
     }
 
-    const queryString = params.join('&');
-    const sourceUrl = `${PIXEL_ENDPOINT}?${queryString}`;
+    // Convert final object to JSON string
+    let jsonData;
+    try {
+        jsonData = JSON.stringify(dataObject);
+    } catch (e) {
+        console.error(`Failed to stringify tracking data object for event ${event}:`, e, dataObject);
+        return; // Don't attempt to send if data is malformed
+    }
 
-    console.log(`Sending pixel for event: ${event}`, sourceUrl); // Log for debugging
+    console.log(`[core.js] Sending POST payload for event: ${event}`, dataObject); // Log the object before sending
 
-    // Send data using sendBeacon if available, otherwise fallback to image
+    // Send data using sendBeacon if available, otherwise fallback to fetch POST
     if (navigator.sendBeacon) {
         try {
-            const sent = navigator.sendBeacon(sourceUrl);
+            // sendBeacon can send Blob data directly
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const sent = navigator.sendBeacon(PIXEL_ENDPOINT, blob);
             if (!sent) {
-              console.warn(`navigator.sendBeacon returned false for ${event}. Falling back to image.`);
-              sendImagePixel(sourceUrl);
+              console.warn(`navigator.sendBeacon returned false for ${event}. Falling back to fetch.`);
+              sendFetchPost(jsonData);
             }
         } catch (e) {
              console.error(`Error using navigator.sendBeacon for ${event}:`, e);
-             sendImagePixel(sourceUrl); // Fallback on error
+             sendFetchPost(jsonData); // Fallback on error
         }
     } else {
-        sendImagePixel(sourceUrl);
+        sendFetchPost(jsonData);
     }
 }
 
-// Fallback function to send pixel using an image tag
-function sendImagePixel(url) {
-    const img = document.createElement('img');
-    img.src = url;
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = ''; // Accessibility best practice
-    img.setAttribute('aria-hidden', 'true'); // Hide from screen readers
-    document.body.appendChild(img);
-     // Optional: Remove image after a delay to avoid cluttering the DOM
-    setTimeout(() => {
-        if (img.parentNode) {
-            img.parentNode.removeChild(img);
+// Fallback function to send data using fetch POST
+async function sendFetchPost(jsonData) {
+    console.log(`[core.js] sendFetchPost() called for endpoint: ${PIXEL_ENDPOINT}`);
+    try {
+        const response = await fetch(PIXEL_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: jsonData,
+            keepalive: true, // Attempt to keep connection alive for unload events
+            mode: 'cors' // Explicitly set mode for cross-origin requests
+        });
+        if (!response.ok) {
+             console.warn(`Fetch POST request failed for ${PIXEL_ENDPOINT} with status: ${response.status}`);
         }
-    }, 1000); // Remove after 1 second
-    console.log(`Sent pixel via image for URL: ${url}`);
+         console.log(`Sent payload via fetch POST to ${PIXEL_ENDPOINT}`);
+    } catch (error) {
+        console.error(`Error sending payload via fetch POST to ${PIXEL_ENDPOINT}:`, error);
+    }
 } 
