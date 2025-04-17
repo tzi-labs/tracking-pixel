@@ -27,6 +27,23 @@
     <button data-%%FUNC_NAME%%-event="button_attr_click">Trigger Data Attr Event</button>
     <button data-%%FUNC_NAME%%-event="data_attr_with_data" data-%%FUNC_NAME%%-data='{"source":"button_attr", "isValid": true}'>Trigger Data Attr Event w/ Data</button>
 
+    <hr>
+    <h2>Generic Click Test Area (if trackAllClicks is enabled):</h2>
+    <p>Clicking anywhere in this paragraph should trigger a <code>generic_click</code> event.</p>
+    <button id="generic-button">Generic Button (No data-* attrs)</button>
+
+    <div class="card" style="border: 1px solid #ccc; padding: 15px; margin-top: 15px;">
+        <h3 class="card-title" id="card1-title">Card Title 1</h3>
+        <p class="card-description">This is the description for the first card. It contains <span>some nested text</span> elements.</p>
+        <button>Button Inside Card 1</button>
+    </div>
+
+    <div class="card" style="border: 1px solid #aaa; padding: 10px; margin-top: 15px;">
+        <h3 class="card-title" id="card2-title">Card Title 2</h3>
+        <p>Another card description.</p>
+        <a href="#" style="display: inline-block; margin-top: 5px;">Link Inside Card 2</a>
+    </div>
+
     <div class="snippet-container">
         <h2>Snippet Code Injected Above:</h2>
         <p>(The actual tracking snippet configured with your settings has been injected into the <code>&lt;head&gt;</code> of this page during the build process).</p>

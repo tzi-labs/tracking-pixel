@@ -13,15 +13,13 @@
     </style>
 
     <!-- Start Simple Tracker Snippet -->
-<script>
-!function(e,n,t,a,i,o,p,s,c){e[i]?console.warn("Tracker snippet included multiple times. Skipping initialization."):(p=e[i]=function(){p.process?p.process.apply(p,arguments):p.queue.push(arguments)},p.queue=[],p.t=Date.now(),(s=n.createElement(t)).async=1,s.src="/bbbb.min.js?t="+864e5*Math.ceil(Date.now()/864e5),(c=n.getElementsByTagName(t)[0])&&c.parentNode?c.parentNode.insertBefore(s,c):(n.head||n.getElementsByTagName("head")[0]||n.documentElement).appendChild(s),e[i]("init","AWESOME-SAUCE"),e[i]("event","pageload"))}(window,document,"script",0,"strk");
-</script>
-<!-- End Simple Tracker Snippet -->
+    <script>!function(e,t,n,a,i,o,c,s,p){e[i]?console.warn("Tracker snippet included multiple times. Skipping initialization."):(c=e[i]=function(){c.process?c.process.apply(c,arguments):c.queue.push(arguments)},c.queue=[],c.t=Date.now(),(s=t.createElement(n)).async=1,s.src="https://cdn.whatsthattech.com/cooking.min.js?t="+864e5*Math.ceil(Date.now()/864e5),(p=t.getElementsByTagName(n)[0])&&p.parentNode?p.parentNode.insertBefore(s,p):(t.head||t.getElementsByTagName("head")[0]||t.documentElement).appendChild(s),e[i]("init","tiffy-cooks"),e[i]("event","pageload"))}(window,document,"script",0,"strk"),strk("config","trackAllClicks",!0);</script>
+
 
 </head>
 <body>
     <h1>Simple Tracker Demo Page</h1>
-    <p>This page includes the tracking snippet. Check your browser's network tab (for requests to <code>https://your-tracker-server.com/</code>) and the server logs to see tracking events.</p>
+    <p>This page includes the tracking snippet. Check your browser's network tab (for requests to <code>https:/tracking.whatsthattech.com</code>) and the server logs to see tracking events.</p>
 
     <h2>Trigger Custom Events (using <code>strk</code>):</h2>
     <button onclick="strk('event', 'button_js_click')">Trigger JS Event</button>
@@ -30,6 +28,23 @@
     <h2>Trigger via Data Attributes:</h2>
     <button data-strk-event="button_attr_click">Trigger Data Attr Event</button>
     <button data-strk-event="data_attr_with_data" data-strk-data='{"source":"button_attr", "isValid": true}'>Trigger Data Attr Event w/ Data</button>
+
+    <hr>
+    <h2>Generic Click Test Area (if trackAllClicks is enabled):</h2>
+    <p>Clicking anywhere in this paragraph should trigger a <code>generic_click</code> event.</p>
+    <button id="generic-button">Generic Button (No data-* attrs)</button>
+
+    <div class="card" style="border: 1px solid #ccc; padding: 15px; margin-top: 15px;">
+        <h3 class="card-title" id="card1-title">Card Title 1</h3>
+        <p class="card-description">This is the description for the first card. It contains <span>some nested text</span> elements.</p>
+        <button>Button Inside Card 1</button>
+    </div>
+
+    <div class="card" style="border: 1px solid #aaa; padding: 10px; margin-top: 15px;">
+        <h3 class="card-title" id="card2-title">Card Title 2</h3>
+        <p>Another card description.</p>
+        <a href="#" style="display: inline-block; margin-top: 5px;">Link Inside Card 2</a>
+    </div>
 
     <div class="snippet-container">
         <h2>Snippet Code Injected Above:</h2>

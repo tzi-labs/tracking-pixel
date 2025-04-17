@@ -130,15 +130,18 @@ The snippet looks like this (after build):
 
 ### 4. Sending Custom Events
 
-Use the global function (default: `strk`) defined by `PIXEL_FUNC_NAME` to send custom events.
+Use the global function (default: `strk`) defined by `PIXEL_FUNC_NAME` to interact with the tracker.
 
-*   **Syntax:** `strk('event', 'yourEventName', optionalData)`
+*   **Initialize:** `strk('init', 'YOUR-TRACKER-ID')` - This is usually handled by the snippet.
 
-*   **`yourEventName` (String):** The name of the event (e.g., `'button_click'`, `'form_submit'`). Avoid using `'pageload'` or `'pageclose'` as these are handled automatically.
-*   **`optionalData` (String | Object | Function):** Optional data to send with the event.
-    *   If an **Object**, it will be `JSON.stringify`-ed.
-    *   If a **Function**, it will be executed, and its return value will be processed (useful for getting dynamic data at the time of the event).
-    *   Any other type will be converted to a string.
+*   **Send Event:** `strk('event', 'yourEventName', optionalData)`
+    *   `yourEventName` (String): The name of the event (e.g., `'button_click'`, `'form_submit'`). Avoid using `'pageload'` or `'pageclose'` as these are handled automatically. `'generic_click'` is used by the `trackAllClicks` feature.
+    *   `optionalData` (String | Object | Function): Optional data to send with the event. Objects are stringified, functions are executed.
+
+*   **Set Custom Parameter:** `strk('param', 'parameterName', valueOrFunction)` - Adds a custom key-value pair to *all* subsequent tracking requests.
+
+*   **Set Configuration:** `strk('config', 'configKey', value)` - Changes tracker behavior.
+    *   `strk('config', 'trackAllClicks', true)`: Enables automatic tracking of all clicks on the page. The event name sent will be `'generic_click'`, and the event data (`ed`) will contain details about the clicked element (`tagName`, `id`, `classes`, `text`). Defaults to `false`.
 
 *   **Examples:**
     ```javascript
@@ -196,8 +199,8 @@ Each request sent to the `OPIX_PIXEL_ENDPOINT` is a **POST** request with a **JS
 | :------------------ | :-------------------------- | :---------------------------------------------------------- | :--------------------------------------------- |
 | `id`                | `MY-SITE-123`               | Tracker ID for the website/app                              | `Config.id` (from `init` command)              |
 | `uid`               | `1-abcd...`                 | Unique User ID (stored in `__<funcName>_uid` cookie)        | `Cookie.get('uid')`                            |
-| `ev`                | `pageload`                  | The event name (`pageload`, `pageclose`, or custom)         | Event trigger                                  |
-| `ed`                | `{"step":1}` or `"xyz"` or `null` | Optional event data (parsed object, string, or null)       | 3rd argument to `event` command / data attribute |
+| `ev`                | `pageload` / `generic_click` | The event name (`pageload`, `pageclose`, custom, or `generic_click`) | Event trigger / Click listener                |
+| `ed`                | `{"step":1}` or `{"tagName":"BUTTON", "sectionHeading":"Some Title"...}` | Optional event data. For `generic_click`, contains element details including `tagName`, `id`, `classes`, `text`, and `sectionHeading`. | 3rd argument to `event` / Click listener / `null` |
 | `v`                 | `1`                         | Tracker version                                             | `Config.version` (build time)                |
 | `dl`                | `http://example.com/page`   | Document Location (current page URL)                        | `window.location.href`                         |
 | `rl`                | `http://google.com/` or `null` | Referrer Location                                           | `document.referrer`                          |

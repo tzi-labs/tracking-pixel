@@ -73,6 +73,11 @@ function generateAndInjectPlugin(config) {
         
         const finalSnippetContent = `<!-- Start Simple Tracker Snippet -->\n<script>\n${minifiedResult.code}\n</script>\n<!-- End Simple Tracker Snippet -->`;
         console.log(`[Plugin] Final snippet content generated.`);
+
+        // --- Create the trackAllClicks config script --- 
+        const configScriptName = pluginConfig.PIXEL_FUNC_NAME; // Use configured name
+        const trackAllClicksScript = `<script>${configScriptName}('config', 'trackAllClicks', true);</script>`;
+        console.log(`[Plugin] Generated trackAllClicks config script: ${trackAllClicksScript}`);
         
         // --- 2. Process index.html --- 
         console.log(`\n[Plugin] Processing index.html template...`);
@@ -81,7 +86,8 @@ function generateAndInjectPlugin(config) {
 
         // Replace placeholders in index.html
         let finalIndexContent = indexTemplateContent
-            .replace('<!-- SNIPPET_INJECTION_POINT -->', finalSnippetContent)
+            // Inject BOTH the snippet and the config script
+            .replace('<!-- SNIPPET_INJECTION_POINT -->', finalSnippetContent + '\n    ' + trackAllClicksScript)
             .replace(/%%PIXEL_ENDPOINT%%/g, pluginConfig.PIXEL_ENDPOINT) // Use cloned config
             .replace(/%%FUNC_NAME%%/g, pluginConfig.PIXEL_FUNC_NAME); // Use cloned config
         

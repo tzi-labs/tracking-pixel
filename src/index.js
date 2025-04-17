@@ -88,44 +88,88 @@ window.addEventListener(pageCloseEvent, function() {
 
 // DOM Content Loaded / Window Load Listeners
 function setupEventListeners() {
-    console.log("[index.js] setupEventListeners() called."); // Added log
-    // Listener for clicks on elements with data attributes
+    console.log("[index.js] setupEventListeners() called.");
+    // Listener for clicks on elements with data attributes AND generic clicks
     document.body.addEventListener('click', function(e) {
-        console.log("[index.js] Body click listener fired."); // Added log
+        console.log("[index.js] Body click listener fired.");
         let target = e.target;
-        let dataAttrFound = false;
-        let linkFound = false;
+        let dataAttrFound = false; // Flag to see if specific tracking handled this click
+        let elementForGenericClick = null; // Store the most relevant element for generic click
 
         // Traverse up the DOM tree to find attributes
         while (target && target !== document.body) {
-            // Check for data-event attribute
-            if (!dataAttrFound) {
+            // Check for specific data-event attribute FIRST
+            if (!dataAttrFound) { // Only check if we haven't already found one lower down
                 const eventName = target.getAttribute(`data-${PIXEL_FUNC_NAME}-event`);
                 if (eventName) {
-                    dataAttrFound = true; // Stop searching for this type once found
+                    dataAttrFound = true; // Mark that specific tracking handled it
                     const eventData = target.getAttribute(`data-${PIXEL_FUNC_NAME}-data`);
-                    console.log(`[index.js] Data attribute click detected: event='${eventName}', data='${eventData}'`); // Added log
+                    console.log(`[index.js] Data attribute click detected: element=${target.tagName}, event='${eventName}', data='${eventData}'`); 
                     // Trigger custom event
                     window[PIXEL_FUNC_NAME]('event', eventName, eventData);
+                    // Don't break here yet, continue checking for anchor tags for pageclose
                 }
             }
 
-            // Check for anchor tag
-             if (!linkFound && target.tagName === 'A' && target.href) {
-                 linkFound = true; // Stop searching for this type once found
+            // Store the initial target for potential generic click info
+            // This ensures we capture info about the *actual* clicked element
+            if (elementForGenericClick === null) {
+                elementForGenericClick = target;
+            }
+
+             // Check for anchor tag for pageclose logic (independent of click tracking)
+            if (target.tagName === 'A' && target.href) {
                  if (Helper.isExternalHost(target)) {
-                     console.log(`[index.js] External link clicked: ${target.href}`); // Added log
+                     console.log(`[index.js] External link clicked: ${target.href}`);
                      // Store the external link info for potential use in 'pageclose'
                     Config.lastExternalHost = { link: target.href, time: Helper.now() };
                  }
+                 // We don't break here for links, allow traversal to continue for potential data-attributes on parent links
              }
 
-            // If both types found, no need to traverse further
-            if (dataAttrFound && linkFound) {
-                break;
+            // If a specific data attribute was found, we can stop the traversal for click tracking purposes
+            if (dataAttrFound) {
+                 break;
             }
 
             target = target.parentElement;
+        }
+
+        // If NO specific data attribute was found AND trackAllClicks is enabled AND we identified an element
+        if (!dataAttrFound && Config.trackAllClicks && elementForGenericClick) {
+
+            let sectionHeadingText = null;
+            // Define common block/section level elements
+            const sectionSelector = 'div, section, article, aside, main, header, footer, li';
+            const headingSelector = 'h1, h2, h3, h4, h5, h6';
+
+            // 1. Try to find a heading within the nearest section container
+            const sectionContainer = elementForGenericClick.closest(sectionSelector);
+            if (sectionContainer) {
+                const headingInSection = sectionContainer.querySelector(headingSelector);
+                if (headingInSection) {
+                    sectionHeadingText = headingInSection.textContent?.trim().substring(0, 150);
+                }
+            }
+
+            // 2. If no heading found in a container, fall back to nearest ancestor heading
+            if (!sectionHeadingText) {
+                const closestAncestorHeading = elementForGenericClick.closest(headingSelector);
+                if (closestAncestorHeading) {
+                     sectionHeadingText = closestAncestorHeading.textContent?.trim().substring(0, 150);
+                }
+            }
+
+             // Gather data from the initially clicked element
+            const clickData = {
+                tagName: elementForGenericClick.tagName,
+                id: elementForGenericClick.id || null,
+                classes: elementForGenericClick.className || null,
+                text: elementForGenericClick.textContent?.trim().substring(0, 100) || null, // Text of the clicked element
+                sectionHeading: sectionHeadingText // Heading text from container/ancestor
+            };
+            console.log('[index.js] Generic click detected:', clickData);
+            window[PIXEL_FUNC_NAME]('event', 'generic_click', clickData);
         }
 
     }, true); // Use capture phase

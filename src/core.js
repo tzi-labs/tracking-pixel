@@ -15,6 +15,7 @@ export const Config = {
   pageLoadOnce: false, // Ensure 'pageload' fires only once
   pageCloseOnce: false, // Ensure 'pageclose' fires only once
   lastExternalHost: null, // Store last clicked external link info
+  trackAllClicks: false, // Added: Flag to track all clicks generically
 };
 
 // --- Initial Setup ---
@@ -38,8 +39,6 @@ export function initQueue() {
 // Handles calls like strk('init', 'ID-123'), strk('event', 'click'), etc.
 export function processCommand(method, value, optional) {
     console.log('[core.js] processCommand() received: method=', method, ' value=', value, ' optional=', optional);
-    // Convert arguments object to array - REMOVED
-    // const [method, value, optional] = Array.from(args); 
 
     if (method === 'init') {
         if (value) {
@@ -51,13 +50,24 @@ export function processCommand(method, value, optional) {
     } else if (method === 'param') {
         if (value && typeof optional !== 'undefined') {
             // Store custom parameters. The value will be evaluated when the pixel is sent.
-            Config.params[value] = () => Helper.optionalData(optional); // Store function to resolve data later
+            Config.params[value] = () => Helper.optionalData(optional);
             console.log(`[core.js] Custom parameter set: ${value}`);
         } else {
             console.error("[core.js] Command 'param' requires a key and a value.");
         }
     } else if (method === 'event') {
         handleEvent(value, optional);
+    } else if (method === 'config') { // Added: Handle config command
+        if (value && typeof optional !== 'undefined') {
+            if (Object.hasOwnProperty.call(Config, value)) { // Check if config key exists
+                 Config[value] = optional; // Set the config value
+                 console.log(`[core.js] Config set: ${value} =`, optional);
+            } else {
+                console.warn(`[core.js] Unknown config key: ${value}`);
+            }
+        } else {
+            console.error("[core.js] Command 'config' requires a key and a value.");
+        }
     } else {
         console.warn(`[core.js] Unknown command received: ${method}`);
     }
@@ -171,11 +181,26 @@ function sendPayload(event, timestamp, optionalData) {
             try {
                 // Execute the function associated with the key to get the current value
                 const value = allAttributes[key](key); // Pass key for context if needed (e.g., UTMs)
-                // Assign value to dataObject, handling potential absence
-                dataObject[key] = Helper.isPresent(value) ? value : null; // Use null for absent values in JSON
+                
+                // Check if the value is present
+                const valueIsPresent = Helper.isPresent(value);
+
+                // Only include UTM parameters if they have a value
+                if (key.startsWith('utm_')) {
+                    if (valueIsPresent) {
+                        dataObject[key] = value;
+                    }
+                    // Else: Do nothing, omit the key if UTM value is not present
+                } else {
+                     // For non-UTM parameters, include them, assigning null if absent
+                     dataObject[key] = valueIsPresent ? value : null; 
+                }
             } catch (e) {
-                console.error(`Error getting value for parameter "${key}":`, e);
-                dataObject[key] = null; // Assign null on error
+                console.error(`[core.js] Error getting value for parameter "${key}":`, e);
+                // Only include the key with null value on error if it's not a UTM parameter
+                if (!key.startsWith('utm_')) {
+                    dataObject[key] = null; 
+                }
             }
         }
     }
